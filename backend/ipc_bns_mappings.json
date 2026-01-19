@@ -275,13 +275,18 @@
         "Heading": "Punishments."
     },
     {
-        "IPC_Section": "54 & 55",
+        "IPC_Section": "54",
+        "BNS_Section": "5",
+        "Heading": "Commutation of sentence."
+    },
+    {
+        "IPC_Section": "55",
         "BNS_Section": "5",
         "Heading": "Commutation of sentence."
     },
     {
         "IPC_Section": "55A",
-        "BNS_Section": "Explanati on\nto section 5",
+        "BNS_Section": "5",
         "Heading": "Commutation of sentence."
     },
     {
@@ -320,7 +325,12 @@
         "Heading": "Imprisonment for non-payment of fine, when offence punishable with fine only."
     },
     {
-        "IPC_Section": "68 & 69",
+        "IPC_Section": "68",
+        "BNS_Section": "8(6)",
+        "Heading": "Imprisonment to terminate on payment of fine. Termination of imprisonment on payment of proportional part of fine."
+    },
+     {
+        "IPC_Section": "69",
         "BNS_Section": "8(6)",
         "Heading": "Imprisonment to terminate on payment of fine. Termination of imprisonment on payment of proportional part of fine."
     },
@@ -610,7 +620,12 @@
         "Heading": "Rape definition."
     },
     {
-        "IPC_Section": "376(1) &\n376(2)",
+        "IPC_Section": "376(1)",
+        "BNS_Section": "64",
+        "Heading": "Punishment for rape."
+    },
+    {
+        "IPC_Section": "376(2)",
         "BNS_Section": "64",
         "Heading": "Punishment for rape."
     },
@@ -660,12 +675,12 @@
         "Heading": "Punishment for repeat offenders."
     },
     {
-        "IPC_Section": "228A (1)/(2)",
+        "IPC_Section": "228A",
         "BNS_Section": "72",
         "Heading": "Disclosure of identity of victim of certain offences etc."
     },
     {
-        "IPC_Section": "228A (3)",
+        "IPC_Section": "228A(3)",
         "BNS_Section": "73",
         "Heading": "Printing or publishing any matter relating to court proceedings without permission."
     },
@@ -735,7 +750,7 @@
         "Heading": "Husband or relative of husband of a woman subjecting her to cruelty."
     },
     {
-        "IPC_Section": "498A\nExplanat ion",
+        "IPC_Section": "498A",
         "BNS_Section": "86",
         "Heading": "Cruelty defined."
     },
@@ -821,12 +836,12 @@
     },
     {
         "IPC_Section": "302",
-        "BNS_Section": "103\n(1)",
+        "BNS_Section": "103(1)",
         "Heading": "Punishment for murder."
     },
     {
         "IPC_Section": "-",
-        "BNS_Section": "103\n(2)",
+        "BNS_Section": "103(2)",
         "Heading": "Punishment for murder."
     },
     {
@@ -841,12 +856,12 @@
     },
     {
         "IPC_Section": "304A",
-        "BNS_Section": "106\n(1)",
+        "BNS_Section": "106(1)",
         "Heading": "Causing death by negligence."
     },
     {
         "IPC_Section": "-",
-        "BNS_Section": "106\n(2)",
+        "BNS_Section": "106(2)",
         "Heading": "Causing death by negligence."
     },
     {
@@ -891,12 +906,12 @@
     },
     {
         "IPC_Section": "321",
-        "BNS_Section": "115\n(1)",
+        "BNS_Section": "115(1)",
         "Heading": "Voluntarily causing hurt."
     },
     {
         "IPC_Section": "323",
-        "BNS_Section": "115\n(2)",
+        "BNS_Section": "115(2)",
         "Heading": "Punishment for voluntarily causing hurt."
     },
     {
@@ -906,72 +921,72 @@
     },
     {
         "IPC_Section": "322",
-        "BNS_Section": "117\n(1)",
+        "BNS_Section": "117(1)",
         "Heading": "Voluntarily causing grievous hurt punishment."
     },
     {
         "IPC_Section": "325",
-        "BNS_Section": "117\n(2)",
+        "BNS_Section": "117(2)",
         "Heading": "Punishment for voluntarily causing grievous hurt."
     },
     {
         "IPC_Section": "-",
-        "BNS_Section": "117\n(3)",
+        "BNS_Section": "117(3)",
         "Heading": "Voluntarily causing grievous hurt."
     },
     {
         "IPC_Section": "-",
-        "BNS_Section": "117\n(4)",
+        "BNS_Section": "117(4)",
         "Heading": "Voluntarily causing grievous hurt."
     },
     {
         "IPC_Section": "324",
-        "BNS_Section": "118 (1)",
+        "BNS_Section": "118(1)",
         "Heading": "Voluntarily causing hurt or grievous hurt by dangerous weapons or means."
     },
     {
         "IPC_Section": "326",
-        "BNS_Section": "118 (2)",
+        "BNS_Section": "118(2)",
         "Heading": "Voluntarily causing hurt or grievous hurt by dangerous weapons or means."
     },
     {
         "IPC_Section": "327",
-        "BNS_Section": "119 (1)",
+        "BNS_Section": "119(1)",
         "Heading": "Voluntarily causing hurt or grievous hurt to extort property, or to constrain to an illegal act."
     },
     {
         "IPC_Section": "329",
-        "BNS_Section": "119 (2)",
+        "BNS_Section": "119(2)",
         "Heading": "Voluntarily causing hurt or grievous hurt to extort property, or to constrain to an illegal act."
     },
     {
         "IPC_Section": "330",
-        "BNS_Section": "120 (1)",
+        "BNS_Section": "120(1)",
         "Heading": "Voluntarily causing hurt or grievous hurt to extort confession or to compel restoration of property."
     },
     {
         "IPC_Section": "331",
-        "BNS_Section": "120 (2)",
+        "BNS_Section": "120(2)",
         "Heading": "Voluntarily causing grievous hurt to extort confession, or to compel restoration of property."
     },
     {
         "IPC_Section": "332",
-        "BNS_Section": "121 (1)",
+        "BNS_Section": "121(1)",
         "Heading": "Voluntarily causing hurt to deter public servant from his duty."
     },
     {
         "IPC_Section": "333",
-        "BNS_Section": "121 (2)",
+        "BNS_Section": "121(2)",
         "Heading": "Voluntarily causing grievous hurt to deter public servant from his duty."
     },
     {
         "IPC_Section": "334",
-        "BNS_Section": "122 (1)",
+        "BNS_Section": "122(1)",
         "Heading": "Voluntarily causing provocation hurt on."
     },
     {
         "IPC_Section": "335",
-        "BNS_Section": "122 (2)",
+        "BNS_Section": "122(2)",
         "Heading": "Voluntarily causing grievous hurt on provocation."
     },
     {
@@ -981,12 +996,12 @@
     },
     {
         "IPC_Section": "326A",
-        "BNS_Section": "124 (1)",
+        "BNS_Section": "124(1)",
         "Heading": "Voluntarily causing grievous hurt by use of acid etc."
     },
     {
         "IPC_Section": "326B",
-        "BNS_Section": "124 (2)",
+        "BNS_Section": "124(2)",
         "Heading": "Voluntarily causing grievous hurt by throwing or attempting to throw acid."
     },
     {
@@ -996,62 +1011,62 @@
     },
     {
         "IPC_Section": "337",
-        "BNS_Section": "125 (a)",
+        "BNS_Section": "125(a)",
         "Heading": "Where hurt is caused."
     },
     {
         "IPC_Section": "338",
-        "BNS_Section": "125 (b)",
+        "BNS_Section": "125(b)",
         "Heading": "Where grievous hurt is caused."
     },
     {
         "IPC_Section": "339",
-        "BNS_Section": "126 (1)",
+        "BNS_Section": "126(1)",
         "Heading": "Wrongful restraint."
     },
     {
         "IPC_Section": "341",
-        "BNS_Section": "126 (2)",
+        "BNS_Section": "126(2)",
         "Heading": "Punishment for Wrongful restraint."
     },
     {
         "IPC_Section": "340",
-        "BNS_Section": "127 (1)",
+        "BNS_Section": "127(1)",
         "Heading": "Wrongful confinement."
     },
     {
         "IPC_Section": "342",
-        "BNS_Section": "127 (2)",
+        "BNS_Section": "127(2)",
         "Heading": "Punishment for Wrongful confinement."
     },
     {
         "IPC_Section": "343",
-        "BNS_Section": "127 (3)",
+        "BNS_Section": "127(3)",
         "Heading": "Wrongful confinement for three or more days."
     },
     {
         "IPC_Section": "344",
-        "BNS_Section": "127 (4)",
+        "BNS_Section": "127(4)",
         "Heading": "Wrongful confinement for ten or more days."
     },
     {
         "IPC_Section": "345",
-        "BNS_Section": "127 (5)",
+        "BNS_Section": "127(5)",
         "Heading": "Wrongful confinement of person for whose liberation writ has been issued."
     },
     {
         "IPC_Section": "346",
-        "BNS_Section": "127 (6)",
+        "BNS_Section": "127(6)",
         "Heading": "Wrongful confinement in secret."
     },
     {
         "IPC_Section": "347",
-        "BNS_Section": "127 (7)",
+        "BNS_Section": "127(7)",
         "Heading": "Wrongful confinement to extort property, or constrain to illegal act."
     },
     {
         "IPC_Section": "348",
-        "BNS_Section": "127 (8)",
+        "BNS_Section": "127(8)",
         "Heading": "Wrongful confinement to extort confession, or compel restoration of property."
     },
     {
@@ -1101,22 +1116,22 @@
     },
     {
         "IPC_Section": "359",
-        "BNS_Section": "137 (1)",
+        "BNS_Section": "137(1)",
         "Heading": "Kidnapping."
     },
     {
         "IPC_Section": "360",
-        "BNS_Section": "137 (1)\n(a)",
+        "BNS_Section": "137(1)\n(a)",
         "Heading": "Kidnapping from India."
     },
     {
         "IPC_Section": "361",
-        "BNS_Section": "137 (1)\n(b)",
+        "BNS_Section": "137(1)\n(b)",
         "Heading": "Kidnapping from lawful guardianship."
     },
     {
         "IPC_Section": "363",
-        "BNS_Section": "137 (2)",
+        "BNS_Section": "137(2)",
         "Heading": "Punishment for kidnapping."
     },
     {
@@ -1131,17 +1146,17 @@
     },
     {
         "IPC_Section": "364",
-        "BNS_Section": "140 (1)",
+        "BNS_Section": "140(1)",
         "Heading": "Kidnapping or abducting in order to murder, etc."
     },
     {
         "IPC_Section": "364A",
-        "BNS_Section": "140 (2)",
+        "BNS_Section": "140(2)",
         "Heading": "Kidnapping for ransom, etc."
     },
     {
         "IPC_Section": "365",
-        "BNS_Section": "140 (3)",
+        "BNS_Section": "140(3)",
         "Heading": "Kidnapping or abducting with intent secretly and wrongfully to confine person."
     }
 ]
