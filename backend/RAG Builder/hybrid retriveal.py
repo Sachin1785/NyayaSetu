@@ -5,6 +5,7 @@ from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_community.retrievers import BM25Retriever
 from langchain_core.documents import Document
 from deep_translator import GoogleTranslator
+import numpy as np
 
 # --- CONFIGURATION ---
 DB_DIRECTORY = "./legal_db"
@@ -60,53 +61,82 @@ def translate_query(text):
 # --- 3. THE CUSTOM HYBRID LOGIC (RRF Algorithm) ---
 def perform_hybrid_search(query, vector_db, bm25_retriever):
     """
-    Manually combines Vector Search and Keyword Search.
-    Uses 'Reciprocal Rank Fusion' (RRF) to sort results.
+    Manually combines Vector Search and Keyword Search (hybrid), then applies MMR for diversity.
     """
-    # A. Get Results from both "Brains"
+    # --- A. Get Results from both "Brains" (increase k for more candidates) ---
+    vector_k = 15
+    keyword_k = 15
+    mmr_k = 6  # Final number of results to return
+
     # 1. Vector Search (Semantic)
-    vector_results = vector_db.similarity_search(query, k=4)
-    
+    vector_results = vector_db.similarity_search(query, k=vector_k)
+
     # 2. Keyword Search (Exact Match)
-    keyword_results = bm25_retriever.invoke(query)
-    
-    # B. Combine Results using RRF
-    # Logic: We assign a score based on rank. 
-    # If a doc is #1 in Vector and #1 in Keyword, it gets a huge score.
-    
+    keyword_results = bm25_retriever.invoke(query)[:keyword_k]
+
+    # --- B. Combine Results using RRF (Reciprocal Rank Fusion) ---
     combined_scores = {}
-    
-    # Helper to calculate score: 1 / (rank + k)
-    # k is a smoothing constant (usually 60)
     def add_to_scores(results, weight=1.0):
         for rank, doc in enumerate(results):
-            doc_id = doc.metadata.get('section_id') # Unique Key
-            if not doc_id: continue
-            
-            # RRF Formula
+            doc_id = doc.metadata.get('section_id')
+            if not doc_id:
+                continue
             score = 1 / (rank + 60)
-            
             if doc_id in combined_scores:
                 combined_scores[doc_id]['score'] += score * weight
             else:
-                combined_scores[doc_id] = {
-                    'doc': doc,
-                    'score': score * weight
-                }
+                combined_scores[doc_id] = {'doc': doc, 'score': score * weight}
+    add_to_scores(vector_results, weight=1.0)
+    add_to_scores(keyword_results, weight=1.0)
 
-    # Apply scores
-    add_to_scores(vector_results, weight=1.0) # Vector Weight
-    add_to_scores(keyword_results, weight=1.0) # Keyword Weight
-    
-    # C. Sort by Final Score (Highest first)
-    sorted_results = sorted(
-        combined_scores.values(), 
-        key=lambda x: x['score'], 
-        reverse=True
-    )
-    
-    # Return just the document objects
-    return [item['doc'] for item in sorted_results[:4]]
+    # --- C. Sort by Final Score (Highest first) ---
+    sorted_results = sorted(combined_scores.values(), key=lambda x: x['score'], reverse=True)
+    candidate_docs = [item['doc'] for item in sorted_results]
+
+    # --- D. Apply MMR (Maximal Marginal Relevance) to candidates ---
+    def cosine_similarity(a, b):
+        # Simple cosine similarity for text embeddings
+        import numpy as np
+        a = np.array(a)
+        b = np.array(b)
+        return np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b) + 1e-8)
+
+    def get_embedding(text):
+        # Use the same embedding function as vector_db
+        return vector_db._embedding_function.embed_query(text)
+
+    # Get embeddings for query and all candidate docs
+    query_emb = get_embedding(query)
+    doc_embs = [get_embedding(doc.page_content) for doc in candidate_docs]
+
+    # MMR selection
+    selected = []
+    selected_indices = []
+    lambda_mult = 0.5  # Balance between relevance and diversity
+    for _ in range(min(mmr_k, len(candidate_docs))):
+        if not selected:
+            # First: pick the most relevant (highest similarity to query)
+            sims = [cosine_similarity(query_emb, emb) for emb in doc_embs]
+            idx = int(np.argmax(sims))
+            selected.append(candidate_docs[idx])
+            selected_indices.append(idx)
+        else:
+            max_score = -float('inf')
+            max_idx = -1
+            for i, emb in enumerate(doc_embs):
+                if i in selected_indices:
+                    continue
+                relevance = cosine_similarity(query_emb, emb)
+                diversity = min([1 - cosine_similarity(emb, doc_embs[j]) for j in selected_indices])
+                mmr_score = lambda_mult * relevance + (1 - lambda_mult) * diversity
+                if mmr_score > max_score:
+                    max_score = mmr_score
+                    max_idx = i
+            if max_idx == -1:
+                break
+            selected.append(candidate_docs[max_idx])
+            selected_indices.append(max_idx)
+    return selected
 
 # --- MAIN EXECUTION ---
 def main():
