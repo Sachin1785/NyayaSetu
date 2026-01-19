@@ -1,4 +1,6 @@
 import os
+import sys
+import time
 from dotenv import load_dotenv
 from langchain_groq import ChatGroq
 from langchain_classic.agents import AgentExecutor, create_tool_calling_agent
@@ -13,10 +15,11 @@ import indian_kanoon_lib as ik_api
 
 # --- CONFIGURATION ---
 DB_DIRECTORY = os.path.join(os.path.dirname(__file__), "RAG Builder", "legal_db")
-MODEL_NAME = "BAAI/bge-small-en-v1.5"
+MODEL_NAME = "BAAI/bge-small-en-v1.5" 
 CONFIDENCE_THRESHOLD = 0.35
+MAX_DOC_LENGTH = 10000  # Keeping this safe to avoid constant timeouts
 
-print(f"⏳ Loading components...")
+print(f"⏳ Loading Legal Database...")
 embedding_function = HuggingFaceEmbeddings(
     model_name=MODEL_NAME,
     model_kwargs={'device': 'cpu'},
@@ -27,7 +30,7 @@ if os.path.exists(DB_DIRECTORY):
     db = Chroma(persist_directory=DB_DIRECTORY, embedding_function=embedding_function)
     print(f"✅ Connected to ChromaDB")
 else:
-    print(f"❌ Database not found. RAG tool will fail.")
+    print(f"❌ Database not found. RAG functionality will be limited.")
     db = None
 
 def translate_query_internal(text: str) -> str:
@@ -35,64 +38,68 @@ def translate_query_internal(text: str) -> str:
         if not text.isascii():
             return GoogleTranslator(source='auto', target='en').translate(text)
         return text
-    except:
+    except Exception:
         return text
 
-# --- TOOLS ---
+# --- TOOLS DEFINITION ---
 
 @tool
 def search_legal_database(query: str) -> str:
     """
-    Use this to find DEFINITIONS, PUNISHMENTS, or STATUTE TEXT for IPC/BNS.
-    Example inputs: "punishment for theft", "Section 302 definition".
+    Search for STATUTES, DEFINITIONS, or PUNISHMENTS in IPC/BNS.
+    Input: A specific legal topic (e.g., "punishment for snatching", "Section 302 text").
     """
-    if db is None: return "Error: DB down."
-    results = db.similarity_search_with_relevance_scores(translate_query_internal(query), k=3)
-    if not results: return "No sections found."
+    if db is None: return "Error: Database not connected."
+    
+    clean_query = translate_query_internal(query)
+    results = db.similarity_search_with_relevance_scores(clean_query, k=3)
+    
+    if not results: 
+        return "No specific statutes found in the database."
     
     output = []
     for doc, score in results:
         if score > CONFIDENCE_THRESHOLD:
-            output.append(f"Title: {doc.metadata.get('title')}\nText: {doc.page_content}")
-    return "\n---\n".join(output) if output else "Low relevance results."
+            meta = doc.metadata
+            output.append(f"Act: {meta.get('source', 'Unknown')}\nSection: {meta.get('section_id', 'N/A')}\nText: {doc.page_content}")
+            
+    return "\n---\n".join(output) if output else "No highly relevant sections found."
 
 @tool
 def find_case_law(topic: str, court: str = "supremecourt") -> str:
     """
-    Use this to find REAL COURT CASES or PRECEDENTS. 
-    Inputs:
-    - topic: Legal issue (e.g. "defamation on social media", "bail in murder case")
-    - court: "supremecourt", "highcourts", "delhi", or "bombay".
-    Returns: A list of relevant cases with Document IDs.
+    Finds LIST of relevant court cases/precedents.
+    Args:
+        topic: Legal issue to search (e.g. "snatching vs robbery distinction").
+        court: 'supremecourt' (default) or 'highcourts'.
     """
-    print(f"🔎 Searching Indian Kanoon for: {topic} in {court}")
+    print(f"🔎 Searching Indian Kanoon for: '{topic}' in {court}...")
     results = ik_api.search_legal_cases(query=topic, court=court)
     
     if not results or 'docs' not in results:
         return "No cases found."
         
     output = []
-    for doc in results['docs'][:5]:
-        output.append(f"ID: {doc['tid']} | Case: {doc['title']} | Date: {doc['publishdate']}")
+    for doc in results['docs'][:3]:
+        output.append(f"ID: {doc['tid']} | Title: {doc['title']} | Date: {doc['publishdate']}")
     return "\n".join(output)
 
 @tool
 def read_full_judgment(doc_id: int) -> str:
     """
-    Use this to READ the text of a specific case using its ID.
-    Use 'find_case_law' first to get the ID.
+    Reads the FULL TEXT of a judgment. 
+    MANDATORY: Use this after 'find_case_law' to verify the verdict.
     """
-    print(f"📖 Reading Document ID: {doc_id}")
+    print(f"📖 Reading Full Text for Doc ID: {doc_id}...")
     text = ik_api.get_clean_verdict_text(doc_id)
-    return text[:15000] # Truncate to avoid token limits
+    return text[:MAX_DOC_LENGTH] + "... [Truncated]"
 
 @tool
 def check_statute_usage(section: str, act: str) -> str:
     """
-    Use this to see how a specific Section is applied in courts.
-    Example: section="302", act="Indian Penal Code"
+    Checks how frequently a Section is cited in courts.
     """
-    print(f"⚖️ Checking usage of Section {section} of {act}")
+    print(f"⚖️ Checking citations for Section {section}...")
     results = ik_api.search_by_section(section, act)
     if not results or 'docs' not in results:
         return "No citations found."
@@ -102,33 +109,44 @@ def check_statute_usage(section: str, act: str) -> str:
         output.append(f"ID: {doc['tid']} | Cited In: {doc['title']}")
     return "\n".join(output)
 
-# --- AGENT SETUP ---
+# --- AGENT EXECUTION ---
 def main():
     load_dotenv()
     api_key = os.getenv("GROQ_API_KEY")
     
+    if not api_key:
+        print("❌ Groq API Key missing!")
+        return
+
     llm = ChatGroq(
-        temperature=0,
-        model_name="llama-3.3-70b-versatile", 
+        temperature=0.1, 
+        model_name="openai/gpt-oss-120b", # Using the robust model
         groq_api_key=api_key
     )
 
-    # REGISTER ALL TOOLS HERE
     tools = [search_legal_database, find_case_law, read_full_judgment, check_statute_usage]
 
     prompt = ChatPromptTemplate.from_messages([
         ("system", 
-         "You are **NyayaSetu**, a high-precision Legal AI. You do not just provide snippets; you investigate like a lawyer.\n\n"
-         "**CORE OPERATING DIRECTIVES:**\n"
-         "1. **Multi-Query Investigation:** For case law queries, don't rely on one search. Execute multiple `find_case_law` calls with variations (e.g., broad topic vs. specific legal test) to find the best precedents.\n"
-         "2. **Mandatory Deep Read:** Never explain a case's ruling based only on the 'snippet' from a search. You MUST call `read_full_judgment` for the top 1-2 most relevant cases before finalizing your answer.\n"
-         "3. **Statutory Anchoring:** If a search mentions a Section (IPC/BNS), always verify its current text using `search_legal_database` to ensure you aren't citing outdated law.\n"
-         "4. **Conflict Resolution:** If a High Court case contradicts a Supreme Court case, prioritize the Supreme Court but mention the High Court's stance as a local variation.\n\n"
-         "**RESPONSE STRUCTURE:**\n"
-         "- **Statutory Position:** Cite the Section and Act first.\n"
-         "- **Judicial Interpretation:** Summarize the core 'Ratio Decidendi' (reason for the decision) from the full judgments you read.\n"
-         "- **Procedural Status:** Mention if the offense is Bailable/Cognizable if the tool data allows.\n"
-         "- **Conclusion:** Give a final synthesis and the mandatory legal disclaimer."
+         "You are **NyayaSetu**, an expert Legal Research AI. "
+         "You do not guess; you verify. You must strictly follow citation standards.\n\n"
+         
+         "**CITATION FORMATTING RULES (MANDATORY):**\n"
+         "1. **Statutes:** Always format as `**Section [Number]** of the **[Act Name]**`.\n"
+         "2. **Case Law:** Always format as `*Case Name*`.\n"
+         "3. **Links:** When citing a case found via tools, generate a link: `https://indiankanoon.org/doc/[ID]/`.\n\n"
+         
+         "**OUTPUT STRUCTURE:**\n"
+         "1. **The Legal Answer:** Separate 'Statutory Law' from 'Case Law Interpretation'.\n"
+         "2. **### Sources & References:** A distinct section at the end.\n"
+         "   - 🏛️ **Statute:** [Act Name], Section [ID]\n"
+         "   - ⚖️ **Precedent:** *[Case Title]* ([Date]) | [Read Judgment](https://indiankanoon.org/doc/[ID]/)\n\n"
+         
+         "**PROTOCOL:**\n"
+         "1. **Statutes First:** Use `search_legal_database`.\n"
+         "2. **Precedent Search:** Use `find_case_law`.\n"
+         "3. **Verification:** You MUST use `read_full_judgment` on the top case.\n"
+         "4. **Disclaimer:** End with a standard AI disclaimer."
         ),
         ("human", "{input}"),
         ("placeholder", "{agent_scratchpad}"),
@@ -137,18 +155,51 @@ def main():
     agent = create_tool_calling_agent(llm, tools, prompt)
     agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
 
-    print("\n⚖️ NyayaSetu Agent Online.\n")
+    print("\n⚖️ NyayaSetu (Powered by GPT-OSS-120b) is Online.\n")
     
     while True:
         try:
             user_input = input("\n👤 User: ")
             if user_input.lower() in ["quit", "exit"]: break
             
-            response = agent_executor.invoke({"input": user_input})
-            print(f"\n🤖 NyayaSetu: {response['output']}")
+            # --- RETRY LOGIC START ---
+            max_retries = 3
+            attempt = 0
             
-        except Exception as e:
-            print(f"\n❌ Error: {e}")
+            while attempt < max_retries:
+                try:
+                    response = agent_executor.invoke({"input": user_input})
+                    print(f"\n🤖 NyayaSetu: {response['output']}")
+                    break # Success! Exit the retry loop
+                    
+                except Exception as e:
+                    error_msg = str(e).lower()
+                    
+                    # Check for Rate Limit errors (413 or 429)
+                    if "413" in error_msg or "rate_limit" in error_msg or "429" in error_msg:
+                        wait_time = 65 # Wait 65 seconds to be safe
+                        print(f"\n⚠️ Rate Limit Hit. Auto-waiting {wait_time}s before retry ({attempt+1}/{max_retries})...")
+                        
+                        # Show a little countdown (optional, but nice UX)
+                        for remaining in range(wait_time, 0, -5):
+                            sys.stdout.write(f"\r⏳ Retrying in {remaining}s...")
+                            sys.stdout.flush()
+                            time.sleep(5)
+                        print("\r🚀 Retrying now...                   ")
+                        
+                        attempt += 1
+                    else:
+                        # If it's a real error (not rate limit), crash properly
+                        print(f"\n❌ Execution Error: {e}")
+                        break
+            
+            if attempt == max_retries:
+                print("\n❌ Failed after 3 retries. Please try a shorter query or wait longer.")
+            # --- RETRY LOGIC END ---
+
+        except KeyboardInterrupt:
+            print("\n👋 Exiting...")
+            break
 
 if __name__ == "__main__":
     main()
