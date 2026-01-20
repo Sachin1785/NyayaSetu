@@ -1,0 +1,84 @@
+from fastapi import FastAPI, HTTPException, UploadFile, File, Form
+from pydantic import BaseModel
+from langchain_chroma import Chroma
+from embeddings import get_embedding_function
+import time
+from langchain_google_genai import ChatGoogleGenerativeAI
+# from langchain.prompts import PromptTemplate
+from dotenv import load_dotenv
+import os
+from query import main as run
+from ingest import main
+from fastapi.responses import JSONResponse
+
+
+load_dotenv()
+
+
+api_key = os.environ.get("GOOGLE_API_KEY")
+if not api_key:
+    raise ValueError("GOOGLE_API_KEY not set in .env file")
+
+# llm = ChatGoogleGenerativeAI(model="models/gemini-2.0-flash", temperature=0.2, google_api_key=api_key)
+
+llm = ChatGoogleGenerativeAI(model="models/gemini-2.0-flash", temperature=0.2, google_api_key=api_key)
+
+print("Loading Model")
+start_model = time.time()
+embedding_fn = get_embedding_function()
+end_model = time.time()
+print(f"Model loaded, time {end_model-start_model}")
+
+CHROMA_PATH = "chroma"
+DATA_PATH = "data"
+
+
+app = FastAPI()
+
+class IngestRequest(BaseModel):
+    id: str
+    filename: str
+    file_base64: str       
+    reset_db: str     
+
+class QueryRequest(BaseModel):
+    id: str
+    query: str
+
+
+@app.post("/docquery")
+async def query(request:QueryRequest):
+    try:
+        id = request.id
+        query = request.query
+        # request_dic = {"id":}
+        response = run(id,query,llm,embedding_fn)
+        if response["error"] == "":
+            return JSONResponse(content=response,status_code=200)
+        else:
+            return JSONResponse(content=response,status_code=400)
+    except Exception as e:
+        print(e)
+        raise HTTPException(status_code=500, detail="Bad Request!")
+
+@app.post("/docingest")
+async def ingest_api(id: str = Form(),file: UploadFile = File(...), filename: str = Form(),reset_db: bool = Form(False),):
+    try:
+        # file_base64 = request.file_base64
+        # filename = request.filename
+        # id = request.id
+        # reset_db = request.reset_db
+        # file_content = base64.b64decode(request.file_base64)
+        os.makedirs(DATA_PATH, exist_ok=True)
+        file_path = os.path.join(DATA_PATH, file.filename)
+        with open(file_path, "wb") as f:
+            content = await file.read()
+            f.write(content)
+        response = main(id,embedding_fn,reset_db)
+        if response["error"] == "":
+            return JSONResponse(content=response,status_code=200)
+        else:
+            return JSONResponse(content=response,status_code=400)
+    except Exception as e:
+        print(e)
+        raise HTTPException(status_code=500, detail="Bad Request!")

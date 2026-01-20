@@ -1,0 +1,13 @@
+sentence-transformers
+fastapi
+langchain-community
+langchain-huggingface
+langchain-huggingface
+langchain-chroma
+langchain-google-genai
+langchain
+uvicorn
+numpy
+python-dotenv
+google-generativeai
+pypdf
