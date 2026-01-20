@@ -2,6 +2,7 @@ from langchain_chroma import Chroma
 from embeddings import get_embedding_function
 import time
 from langchain_google_genai import ChatGoogleGenerativeAI
+from chromadb.config import Settings
 # from langchain.prompts import PromptTemplate
 from dotenv import load_dotenv
 import os
@@ -14,6 +15,7 @@ load_dotenv()
 # llm = ChatGoogleGenerativeAI(model="models/gemini-2.0-flash", temperature=0.2, google_api_key=api_key)
 
 CHROMA_PATH = "chroma"
+CHROMA_SETTINGS = Settings(allow_reset=True)
 # start_model = time.time()
 # embedding_fn = get_embedding_function()
 # end_model = time.time()
@@ -27,7 +29,8 @@ CHROMA_PATH = "chroma"
 def search_docs(query, embedding_fn):
     db = Chroma(
         persist_directory=CHROMA_PATH,
-        embedding_function=embedding_fn
+        embedding_function=embedding_fn,
+        client_settings=CHROMA_SETTINGS,
     )
     start_model = time.time()
     # result = db.similarity_search(query, k=15)
