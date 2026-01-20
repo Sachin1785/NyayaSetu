@@ -1,26 +1,94 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+@theme {
+  /* Canvas & Structure */
+  --color-background: #FFFFFF;
+  --color-foreground: #1F2937;
+  --color-border: #E2E8F0;
+  
+  /* Google Semantic Colors */
+  --color-google-blue: #1A73E8;
+  --color-google-red: #EA4335;
+  --color-google-green: #34A853;
+  --color-google-yellow: #FBBC04;
+  
+  /* Text Colors */
+  --color-text-primary: #1F2937;
+  --color-text-secondary: #6B7280;
+  
+  /* Card */
+  --color-card: #FFFFFF;
+  --color-card-foreground: #1F2937;
+  
+  /* Popover */
+  --color-popover: #FFFFFF;
+  --color-popover-foreground: #1F2937;
+  
+  /* Primary (Google Blue) */
+  --color-primary: #1A73E8;
+  --color-primary-foreground: #FFFFFF;
+  
+  /* Secondary */
+  --color-secondary: #F3F4F6;
+  --color-secondary-foreground: #1F2937;
+  
+  /* Muted */
+  --color-muted: #F3F4F6;
+  --color-muted-foreground: #6B7280;
+  
+  /* Accent */
+  --color-accent: #F3F4F6;
+  --color-accent-foreground: #1F2937;
+  
+  /* Destructive (Google Red) */
+  --color-destructive: #EA4335;
+  --color-destructive-foreground: #FFFFFF;
+  
+  /* Input & Ring */
+  --color-input: #E2E8F0;
+  --color-ring: #1A73E8;
+  
+  /* Radius */
+  --radius: 0.5rem;
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  
+  /* Box Shadows */
+  --shadow-google: 0 1px 2px 0 rgba(60, 64, 67, .3), 0 1px 3px 1px rgba(60, 64, 67, .15);
+  --shadow-google-hover: 0 1px 3px 0 rgba(60, 64, 67, .3), 0 4px 8px 3px rgba(60, 64, 67, .15);
+  
+  /* Fonts */
+  --font-sans: var(--font-google-sans), Inter, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-background);
+  color: var(--color-foreground);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 600;
+}
+
+/* Custom animations */
+@keyframes lift {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-2px);
+  }
+}
+
+.hover-lift {
+  transition: all 0.2s ease-in-out;
+}
+
+.hover-lift:hover {
+  animation: lift 0.2s forwards;
 }
