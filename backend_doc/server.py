@@ -64,11 +64,13 @@ async def query(request:QueryRequest):
 @app.post("/docingest")
 async def ingest_api(id: str = Form(),file: UploadFile = File(...), filename: str = Form(),reset_db: bool = Form(False),):
     try:
-        # file_base64 = request.file_base64
-        # filename = request.filename
-        # id = request.id
-        # reset_db = request.reset_db
-        # file_content = base64.b64decode(request.file_base64)
+        # If requested, clear existing files so only the new document is ingested
+        if reset_db and os.path.exists(DATA_PATH):
+            for existing_name in os.listdir(DATA_PATH):
+                existing_path = os.path.join(DATA_PATH, existing_name)
+                if os.path.isfile(existing_path):
+                    os.remove(existing_path)
+
         os.makedirs(DATA_PATH, exist_ok=True)
         file_path = os.path.join(DATA_PATH, file.filename)
         with open(file_path, "wb") as f:

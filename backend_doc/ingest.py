@@ -1,6 +1,7 @@
 import os
 import shutil
 from langchain_chroma import Chroma
+from chromadb.config import Settings
 from langchain_community.document_loaders import (
     PyPDFLoader,
     TextLoader,
@@ -13,6 +14,7 @@ import time
 
 CHROMA_PATH = "chroma"
 DATA_PATH = "data"
+CHROMA_SETTINGS = Settings(allow_reset=True)
 
 # start_model = time.time()
 # embedding_fn = get_embedding_function()
@@ -73,7 +75,8 @@ def add_to_chroma(chunks, embedding_fn):
 
     db = Chroma(
         persist_directory=CHROMA_PATH,
-        embedding_function=embedding_fn
+        embedding_function=embedding_fn,
+        client_settings=CHROMA_SETTINGS,
     )
 
     chunks_with_ids = cal_chunk_ids(chunks)
@@ -104,17 +107,28 @@ def add_to_chroma(chunks, embedding_fn):
     return len(new_chunks)
 
 
-def clear_database():
-    if os.path.exists(CHROMA_PATH):
-        shutil.rmtree(CHROMA_PATH)
-        print("cleared existing database.")
+def clear_database(embedding_fn):
+    """Logically clear the Chroma database without deleting files on disk.
+
+    Using the underlying Chroma client reset avoids Windows file-lock issues
+    that happen when trying to rmtree() the SQLite files while the server
+    still has active connections.
+    """
+    db = Chroma(
+        persist_directory=CHROMA_PATH,
+        embedding_function=embedding_fn,
+        client_settings=CHROMA_SETTINGS,
+    )
+    # Reset all collections in this persistent Chroma DB.
+    db._client.reset()
+    print("cleared existing database.")
 
 
 def main(id, embedding_fn, reset_db=False):
     response = {'id': id, 'data': '', 'error': ''}
     try:
         if reset_db:
-            clear_database()
+            clear_database(embedding_fn)
         print("Hello from main")
         st = time.time()
         documents = load_documents()
