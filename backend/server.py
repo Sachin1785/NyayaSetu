@@ -8,6 +8,7 @@ import uvicorn
 # Import the logic class from the other file
 from mapper import LegalBackend
 from gemini_agent_core import GeminiLegalAgent
+import indian_kanoon_lib as ik_api
 
 # ==========================================
 # 1. SETUP & LIFECYCLE
@@ -56,6 +57,19 @@ class AgentRequest(BaseModel):
 class AgentResponse(BaseModel):
     status: str
     response: str
+
+class CaseLawSearchRequest(BaseModel):
+    query: str
+    court: Optional[str] = None  # 'supremecourt', 'highcourts', 'tribunals', etc.
+    from_date: Optional[str] = None  # Format: YYYY-MM-DD
+    to_date: Optional[str] = None  # Format: YYYY-MM-DD
+    sort_by: Optional[str] = "relevance"  # 'relevance', 'date', 'citations'
+    max_results: Optional[int] = 10
+
+class CaseLawResponse(BaseModel):
+    status: str
+    cases: List[Dict[str, Any]]
+    total: int
 
 # ==========================================
 # 3. ENDPOINTS
@@ -118,6 +132,88 @@ async def query_legal_agent(request: AgentRequest):
             raise HTTPException(status_code=429, detail="Rate limit exceeded. Please try again later.")
         else:
             raise HTTPException(status_code=500, detail=f"Agent query failed: {error_msg}")
+
+@app.post("/case-law/search", response_model=CaseLawResponse)
+async def search_case_law(request: CaseLawSearchRequest):
+    """
+    Search Indian Kanoon database for case laws
+    Supports filters: court type, date range, sorting
+    """
+    try:
+        if not request.query.strip():
+            raise HTTPException(status_code=400, detail="Query cannot be empty")
+        
+        results = ik_api.search_legal_cases(
+            query=request.query,
+            court=request.court,
+            max_cites=request.max_results or 10
+        )
+        
+        if not results or 'docs' not in results:
+            return CaseLawResponse(
+                status="success",
+                cases=[],
+                total=0
+            )
+        
+        cases = []
+        for doc in results['docs']:
+            # Parse date for filtering
+            doc_date = doc.get('publishdate', '')
+            
+            # Apply date filters if provided
+            if request.from_date and doc_date < request.from_date:
+                continue
+            if request.to_date and doc_date > request.to_date:
+                continue
+            
+            cases.append({
+                "id": doc.get('tid'),
+                "title": doc.get('title', 'Untitled'),
+                "court": doc.get('doctype', 'Unknown Court'),
+                "date": doc_date or 'N/A',
+                "cite_count": doc.get('numcites', 0),
+                "link": f"https://indiankanoon.org/doc/{doc.get('tid')}/"
+            })
+        
+        # Apply sorting
+        if request.sort_by == "date":
+            cases.sort(key=lambda x: x['date'], reverse=True)
+        elif request.sort_by == "citations":
+            cases.sort(key=lambda x: x['cite_count'], reverse=True)
+        # 'relevance' is default order from API
+        
+        return CaseLawResponse(
+            status="success",
+            cases=cases,
+            total=len(cases)
+        )
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Case law search failed: {str(e)}")
+
+@app.get("/case-law/document/{doc_id}")
+async def get_case_document(doc_id: int):
+    """
+    Get the full text of a specific case judgment
+    """
+    try:
+        text = ik_api.get_clean_verdict_text(doc_id)
+        
+        if "Error:" in text:
+            raise HTTPException(status_code=404, detail="Document not found")
+        
+        return {
+            "status": "success",
+            "doc_id": doc_id,
+            "content": text,
+            "link": f"https://indiankanoon.org/doc/{doc_id}/"
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve document: {str(e)}")
 
 if __name__ == "__main__":
     uvicorn.run(app, host="localhost", port=8000)
