@@ -30,7 +30,7 @@ def search_docs(query, embedding_fn):
         embedding_function=embedding_fn
     )
     start_model = time.time()
-    result = db.similarity_search(query, k=15)
+    # result = db.similarity_search(query, k=15)
     # print(results)
     # for d in results:
     #     print(f"{d.page_content}")
@@ -43,7 +43,7 @@ def search_docs(query, embedding_fn):
             "lambda_mult": 0.75
         }
     )
-    # result = retriever.invoke(query)
+    result = retriever.invoke(query)
     end_model = time.time()
     print(f"Searching Time, time {end_model-start_model}")
     # print(results)
