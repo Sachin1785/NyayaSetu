@@ -16,12 +16,9 @@ logging.basicConfig(level=logging.INFO)
 
 def _make_request(endpoint: str, params: Optional[Dict] = None, method: str = 'POST') -> Optional[Dict]:
     """Internal helper to handle authentication and error catching."""
-<<<<<<< HEAD
     if not API_TOKEN:
         logging.error("INDIAN_KANOON_API_TOKEN not set in environment.")
         return None
-=======
->>>>>>> origin/prasham/IPCVSBNS
     headers = {
         'Authorization': f'Token {API_TOKEN}',
         'Accept': 'application/json'

@@ -6,11 +6,13 @@ import uvicorn
 
 # Import the logic class from the other file
 from mapper import LegalBackend
+from gemini_agent_core import GeminiLegalAgent
 
 # ==========================================
 # 1. SETUP & LIFECYCLE
 # ==========================================
 backend = LegalBackend()
+agent = None  # Initialize as None, will be loaded when first needed
 
 # @asynccontextmanager
 # async def lifespan(app: FastAPI):
@@ -35,9 +37,27 @@ class ComparisonResponse(BaseModel):
     related_nodes: List[Dict[str, Any]]
     analysis: Dict[str, Any]
 
+class AgentRequest(BaseModel):
+    query: str
+
+class AgentResponse(BaseModel):
+    status: str
+    response: str
+
 # ==========================================
 # 3. ENDPOINTS
 # ==========================================
+
+def get_agent():
+    """Lazy initialization of the agent to avoid startup delays"""
+    global agent
+    if agent is None:
+        try:
+            agent = GeminiLegalAgent()
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Failed to initialize legal agent: {str(e)}")
+    return agent
+
 @app.post("/compare")
 async def compare_laws(request: LegalRequest):
     """
@@ -62,6 +82,28 @@ async def compare_laws(request: LegalRequest):
         raise HTTPException(status_code=404, detail=result["error"])
         
     return result
+
+@app.post("/agent", response_model=AgentResponse)
+async def query_legal_agent(request: AgentRequest):
+    """
+    Legal Agent Endpoint - Uses LangChain agent for comprehensive legal research
+    Send a legal query and get AI-powered analysis with citations
+    """
+    try:
+        legal_agent = get_agent()
+        response = legal_agent.query(request.query)
+        
+        return AgentResponse(
+            status="success",
+            response=response
+        )
+        
+    except Exception as e:
+        error_msg = str(e)
+        if "rate limit" in error_msg.lower() or "413" in error_msg or "429" in error_msg:
+            raise HTTPException(status_code=429, detail="Rate limit exceeded. Please try again later.")
+        else:
+            raise HTTPException(status_code=500, detail=f"Agent query failed: {error_msg}")
 
 if __name__ == "__main__":
     uvicorn.run(app, host="localhost", port=8000)
