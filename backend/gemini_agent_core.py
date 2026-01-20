@@ -118,8 +118,8 @@ class GeminiLegalAgent:
             raise ValueError("❌ Google API Key missing! Please set GOOGLE_API_KEY in your .env file")
 
         self.llm = ChatGoogleGenerativeAI(
-            model="gemini-1.5-flash",
-            temperature=0.1,
+            model="gemini-3-flash-preview",
+            temperature=0.3,
             google_api_key=self.api_key
         )
 
