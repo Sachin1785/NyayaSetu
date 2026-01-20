@@ -8,7 +8,6 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { CitationBadge } from "@/components/research/CitationBadge";
 import { CaseLawCard } from "@/components/research/CaseLawCard";
-import { ComparatorView } from "@/components/comparator/ComparatorView";
 import { Send, ChevronDown, ChevronUp } from "lucide-react";
 import { useState } from "react";
 import { useSearchParams } from "next/navigation";
@@ -36,9 +35,9 @@ export default function ResearchPage() {
         ]}
       />
 
-      <div className="flex flex-col lg:flex-row h-[calc(100vh-4rem)]">
-        {/* Left Column - Research Chat (100% on mobile, 60% on desktop) */}
-        <div className="flex w-full lg:w-[60%] flex-col border-b lg:border-b-0 lg:border-r border-[#E2E8F0]">
+      <div className="h-[calc(100vh-4rem)]">
+        {/* Research Chat */}
+        <div className="flex w-full flex-col h-full">
           <ScrollArea className="flex-1 p-6">
             <div className="space-y-6 pb-24">
               {/* Summary Card */}
@@ -196,11 +195,6 @@ export default function ResearchPage() {
               </Button>
             </form>
           </div>
-        </div>
-
-        {/* Right Column - Comparator View (Hidden on mobile, 40% on desktop) */}
-        <div className="hidden lg:block lg:w-[40%]">
-          <ComparatorView />
         </div>
       </div>
     </>

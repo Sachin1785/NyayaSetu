@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Scale, FileText, Gavel, Settings, User, X } from "lucide-react";
+import { Home, Scale, FileText, Gavel, Settings, User, X, GitCompare } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState, useEffect } from "react";
 
 const navigationItems = [
   { name: "Home", href: "/", icon: Home },
   { name: "Research", href: "/research", icon: Scale },
+  { name: "Comparator", href: "/comparator", icon: GitCompare },
   { name: "Documents", href: "/documents", icon: FileText },
   { name: "Case Law", href: "/case-law", icon: Gavel },
   { name: "Settings", href: "/settings", icon: Settings },

@@ -1,6 +1,7 @@
 from typing import Optional, List, Dict, Any
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import uvicorn
 
@@ -21,7 +22,19 @@ agent = None  # Initialize as None, will be loaded when first needed
 #     yield
 #     # Cleanup (optional)
 
+
+
+# Initialize FastAPI app before using it
 app = FastAPI(title="Legal Diff Engine")
+
+# Enable CORS for frontend requests
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # ==========================================
 # 2. DATA MODELS
@@ -67,20 +80,21 @@ async def compare_laws(request: LegalRequest):
     """
     law = request.law_type.upper()
     sec_id = request.section.strip()
-    
-    # Logic to construct the full ID (e.g., "2" + "1" -> "2(1)")
+
+    # Only BNS supports subsection
     if law == "BNS" and request.subsection:
         clean_sub = request.subsection.strip().replace("(", "").replace(")", "")
         sec_id = f"{sec_id}({clean_sub})"
+
     query = law + " " + sec_id
     print({query})
-    
+
     result = backend.process_query(query)
     print(result)
-    
+
     if "error" in result:
         raise HTTPException(status_code=404, detail=result["error"])
-        
+
     return result
 
 @app.post("/agent", response_model=AgentResponse)
