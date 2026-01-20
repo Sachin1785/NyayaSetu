@@ -87,14 +87,14 @@ export function ComparatorView() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
           <div className="space-y-2">
             <Label htmlFor="lawType">Law Type</Label>
-            <Tabs value={lawType} onValueChange={(val) => setLawType(val as "IPC" | "BNS")}>
+            <Tabs value={lawType} onValueChange={(val) => setLawType(val as "IPC" | "BNS")}> 
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="IPC">IPC</TabsTrigger>
                 <TabsTrigger value="BNS">BNS</TabsTrigger>
               </TabsList>
             </Tabs>
           </div>
-          
+
           <div className="space-y-2">
             <Label htmlFor="section">Section</Label>
             <Input
@@ -104,17 +104,19 @@ export function ComparatorView() {
               onChange={(e) => setSection(e.target.value)}
             />
           </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="subsection">Subsection (Optional)</Label>
-            <Input
-              id="subsection"
-              placeholder="e.g., 1, a"
-              value={subsection}
-              onChange={(e) => setSubsection(e.target.value)}
-            />
-          </div>
-          
+
+          {lawType === "BNS" && (
+            <div className="space-y-2">
+              <Label htmlFor="subsection">Subsection (Optional)</Label>
+              <Input
+                id="subsection"
+                placeholder="e.g., 1, a"
+                value={subsection}
+                onChange={(e) => setSubsection(e.target.value)}
+              />
+            </div>
+          )}
+
           <div className="space-y-2">
             <Label>&nbsp;</Label>
             <Button 
@@ -134,8 +136,39 @@ export function ComparatorView() {
         )}
       </div>
 
-      {/* Split Comparison */}
-      <div className="flex-1 overflow-hidden">
+      {/* Analysis on top, centered */}
+      {comparisonData && (
+        <div className="flex flex-col items-center justify-center w-full mt-6">
+          <div className="w-full px-4">
+            <Card className="border-t-4 border-t-[#FBBC04] shadow-sm w-full">
+              <CardContent className="p-6">
+                <h3 className="text-lg font-semibold text-[#1F2937] mb-4 text-center">Analysis</h3>
+                <div className="space-y-4">
+                  <div>
+                    {/* <h4 className="text-sm font-semibold text-[#6B7280] mb-2 text-center">Summary</h4> */}
+                    <p className="text-[#1F2937] leading-relaxed text-left px-2">
+                      {comparisonData.analysis.summary}
+                    </p>
+                  </div>
+                  {comparisonData.analysis.changes && comparisonData.analysis.changes.length > 0 && (
+                    <div className="mt-4 rounded-lg bg-amber-50 p-4">
+                      <h4 className="text-sm font-semibold text-[#FBBC04] mb-2">Key Changes</h4>
+                      <ul className="list-disc list-inside text-sm text-[#6B7280] space-y-1">
+                        {comparisonData.analysis.changes.map((change, idx) => (
+                          <li key={idx}>{change}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      )}
+
+      {/* Split Comparison below analysis */}
+      <div className="flex-1 overflow-hidden mt-4">
         {!comparisonData && !loading && (
           <div className="flex items-center justify-center h-full text-[#6B7280]">
             <p>Enter a section number and click Compare to view comparison</p>
@@ -161,7 +194,6 @@ export function ComparatorView() {
                       </h3>
                       <Badge className="bg-[#4285F4]">Primary</Badge>
                     </div>
-                    
                     <div className="space-y-4">
                       <p className="text-[#1F2937] leading-relaxed whitespace-pre-wrap">
                         {comparisonData.primary.text_clean}
@@ -186,7 +218,6 @@ export function ComparatorView() {
                         </h3>
                         <Badge className="bg-[#34A853] hover:bg-[#2D8F46]">Related</Badge>
                       </div>
-                      
                       {node.heading && (
                         <div className="mb-3">
                           <Badge variant="outline" className="text-xs">
@@ -194,7 +225,6 @@ export function ComparatorView() {
                           </Badge>
                         </div>
                       )}
-                      
                       <div className="space-y-4">
                         <p className="text-[#1F2937] leading-relaxed whitespace-pre-wrap">
                           {node.text_clean}
@@ -203,34 +233,6 @@ export function ComparatorView() {
                     </CardContent>
                   </Card>
                 ))}
-                
-                {comparisonData.analysis && (
-                  <Card className="m-4 border-t-4 border-t-[#FBBC04] shadow-sm">
-                    <CardContent className="p-6">
-                      <h3 className="text-lg font-semibold text-[#1F2937] mb-4">Analysis</h3>
-                      
-                      <div className="space-y-4">
-                        <div>
-                          <h4 className="text-sm font-semibold text-[#6B7280] mb-2">Summary</h4>
-                          <p className="text-[#1F2937] leading-relaxed">
-                            {comparisonData.analysis.summary}
-                          </p>
-                        </div>
-                        
-                        {comparisonData.analysis.changes && comparisonData.analysis.changes.length > 0 && (
-                          <div className="mt-4 rounded-lg bg-amber-50 p-4">
-                            <h4 className="text-sm font-semibold text-[#FBBC04] mb-2">Key Changes</h4>
-                            <ul className="list-disc list-inside text-sm text-[#6B7280] space-y-1">
-                              {comparisonData.analysis.changes.map((change, idx) => (
-                                <li key={idx}>{change}</li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
               </div>
             </ResizablePanel>
           </ResizablePanelGroup>
