@@ -5,6 +5,7 @@ import { Header } from "@/components/layout/Header";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Upload,
   Send,
@@ -14,6 +15,8 @@ import {
   AlertCircle,
   X,
   MessageSquarePlus,
+  Sparkles,
+  Trash2,
 } from "lucide-react";
 
 type Message = {
@@ -21,9 +24,16 @@ type Message = {
   content: string;
 };
 
+type UploadedDocument = {
+  name: string;
+  uploadedAt: Date;
+  chunks: number;
+};
+
 export default function DocumentsPage() {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
-  const [isNewChat, setIsNewChat] = useState(true); // Auto-reset DB for new chats
+  const [uploadedDocuments, setUploadedDocuments] = useState<UploadedDocument[]>([]);
+  const [isNewChat, setIsNewChat] = useState(true);
   const [uploadStatus, setUploadStatus] = useState<
     "idle" | "uploading" | "success" | "error"
   >("idle");
@@ -49,8 +59,13 @@ export default function DocumentsPage() {
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     if (files.length > 0) {
-      setSelectedFiles(files);
+      // Append new files to existing selected files
+      setSelectedFiles(prev => [...prev, ...files]);
       setUploadStatus("idle");
+    }
+    // Reset the input value so the same file can be selected again if needed
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
     }
   };
 
@@ -62,8 +77,16 @@ export default function DocumentsPage() {
     setIsNewChat(true);
     setMessages([]);
     setHasDocuments(false);
+    setUploadedDocuments([]);
     setUploadMessage("");
     setUploadStatus("idle");
+  };
+
+  const removeDocument = (index: number) => {
+    setUploadedDocuments((prev) => prev.filter((_, i) => i !== index));
+    if (uploadedDocuments.length <= 1) {
+      setHasDocuments(false);
+    }
   };
 
   const handleUpload = async () => {
@@ -91,7 +114,7 @@ export default function DocumentsPage() {
       formData.append("reset_db", (i === 0 && isNewChat).toString());
 
       try {
-        const response = await fetch("http://localhost:8000/docingest", {
+        const response = await fetch("http://localhost:8001/docingest", {
           method: "POST",
           body: formData,
         });
@@ -103,9 +126,17 @@ export default function DocumentsPage() {
           setDocumentId(data.id);
           // Extract chunk count from message like "10 chunks ingested successfully"
           const match = data.data?.match(/(\d+)\s+chunks?/);
+          const chunkCount = match ? parseInt(match[1]) : 0;
           if (match) {
-            totalChunks += parseInt(match[1]);
+            totalChunks += chunkCount;
           }
+          
+          // Add to uploaded documents list
+          setUploadedDocuments(prev => [...prev, {
+            name: file.name,
+            uploadedAt: new Date(),
+            chunks: chunkCount
+          }]);
         } else {
           failCount++;
         }
@@ -147,7 +178,7 @@ export default function DocumentsPage() {
     setQueryLoading(true);
 
     try {
-      const response = await fetch("http://localhost:8000/docquery", {
+      const response = await fetch("http://localhost:8001/docquery", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -195,184 +226,245 @@ export default function DocumentsPage() {
         breadcrumbs={[{ label: "Home", href: "/" }, { label: "Documents" }]}
       />
 
-      <div className="p-8">
-        <div className="mx-auto max-w-5xl">
-          <div className="flex items-center justify-between mb-6">
-            <h1 className="text-3xl font-bold text-[#1F2937]">
-              Document Analysis
-            </h1>
-            {hasDocuments && (
-              <Button
-                onClick={handleNewChat}
-                variant="outline"
-                className="border-[#1A73E8] text-[#1A73E8] hover:bg-blue-50"
-              >
-                <MessageSquarePlus className="mr-2 h-4 w-4" />
-                New Chat
-              </Button>
-            )}
-          </div>
-
-          {/* Upload Section */}
-          <Card className="mb-6 shadow-sm">
-            <CardContent className="p-6">
-              <div className="flex flex-col gap-4">
-                <div className="flex items-center gap-3">
-                  <div className="flex-1">
-                    <Input
-                      type="file"
-                      accept=".pdf,.docx,.txt"
-                      onChange={handleFileSelect}
-                      ref={fileInputRef}
-                      className="cursor-pointer"
-                      multiple
-                    />
-                  </div>
-                  <Button
-                    onClick={handleUpload}
-                    disabled={
-                      selectedFiles.length === 0 || uploadStatus === "uploading"
-                    }
-                    className="bg-[#1A73E8] hover:bg-[#1557B0]"
-                  >
-                    {uploadStatus === "uploading" ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Uploading...
-                      </>
-                    ) : (
-                      <>
-                        <Upload className="mr-2 h-4 w-4" />
-                        Upload{" "}
-                        {selectedFiles.length > 0 &&
-                          `(${selectedFiles.length})`}
-                      </>
-                    )}
-                  </Button>
-                </div>
-
-                {selectedFiles.length > 0 && (
-                  <div className="flex flex-wrap gap-2">
-                    {selectedFiles.map((file, index) => (
-                      <div
-                        key={index}
-                        className="flex items-center gap-2 bg-[#F1F3F4] rounded-md px-3 py-1.5 text-sm text-[#1F2937]"
-                      >
-                        <FileText className="h-4 w-4" />
-                        <span className="max-w-[200px] truncate">
-                          {file.name}
-                        </span>
-                        <button
-                          onClick={() => removeFile(index)}
-                          className="text-[#6B7280] hover:text-red-600"
-                        >
-                          <X className="h-4 w-4" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {isNewChat && !hasDocuments }
-
-                {uploadProgress && (
-                  <div className="flex items-center gap-2 text-sm text-[#1A73E8]">
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    <span>{uploadProgress}</span>
-                  </div>
-                )}
-
-                {uploadMessage && (
-                  <div
-                    className={`flex items-center gap-2 text-sm ${uploadStatus === "success" ? "text-green-600" : "text-red-600"}`}
-                  >
-                    {uploadStatus === "success" ? (
-                      <CheckCircle2 className="h-4 w-4" />
-                    ) : (
-                      <AlertCircle className="h-4 w-4" />
-                    )}
-                    <span>{uploadMessage}</span>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Chat Interface */}
-          <Card className="shadow-sm">
-            <CardContent className="p-0">
-              {/* Messages Area */}
-              <div className="h-[500px] overflow-y-auto p-6 space-y-4">
+      <div className="h-[calc(100vh-4rem)]">
+        <div className="flex w-full h-full">
+          {/* Main Chat Area - 70% */}
+          <div className="w-[70%] flex flex-col">
+            <ScrollArea className="flex-1">
+              <div className="h-full flex flex-col">
+                {/* Empty State */}
                 {messages.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center h-full text-center">
-                    <div className="flex h-16 w-16 items-center justify-center rounded-full bg-blue-50 mb-4">
-                      <FileText className="h-8 w-8 text-[#1A73E8]" />
-                    </div>
-                    <h3 className="text-lg font-semibold text-[#1F2937] mb-2">
-                      No messages yet
-                    </h3>
-                    <p className="text-sm text-[#6B7280] max-w-md">
-                      {hasDocuments
-                        ? "Start asking questions about your documents"
-                        : "Upload documents to begin analysis"}
-                    </p>
-                  </div>
-                ) : (
-                  messages.map((message, index) => (
-                    <div
-                      key={index}
-                      className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
-                    >
-                      <div
-                        className={`max-w-[80%] rounded-lg px-4 py-3 ${
-                          message.role === "user"
-                            ? "bg-[#1A73E8] text-white"
-                            : "bg-[#F1F3F4] text-[#1F2937]"
-                        }`}
-                      >
-                        <p className="text-sm whitespace-pre-wrap">
-                          {message.content}
+                  <div className="flex-1 flex items-center justify-center p-8">
+                    <div className="text-center">
+                      <div className="bg-gradient-to-br from-[#E8F0FE] to-[#F1F5F9] rounded-xl p-12 border border-[#E2E8F0]">
+                        <div className="flex justify-center gap-2 mb-6">
+                          <div className="w-3 h-3 bg-[#4285F4] rounded-full"></div>
+                          <div className="w-3 h-3 bg-[#34A853] rounded-full"></div>
+                          <div className="w-3 h-3 bg-[#FBBC04] rounded-full"></div>
+                          <div className="w-3 h-3 bg-[#EA4335] rounded-full"></div>
+                        </div>
+                        <div className="flex h-20 w-20 items-center justify-center rounded-full bg-white mb-6 mx-auto shadow-md">
+                          <FileText className="h-10 w-10 text-[#4285F4]" />
+                        </div>
+                        <p className="text-[#1F2937] text-xl font-semibold mb-3">
+                          {hasDocuments ? "Ready to Analyze" : "Start Your Document Analysis"}
+                        </p>
+                        <p className="text-[#6B7280] text-base">
+                          {hasDocuments
+                            ? "Ask questions about your uploaded documents"
+                            : "Upload documents from the sidebar to begin"}
                         </p>
                       </div>
                     </div>
-                  ))
-                )}
-                {queryLoading && (
-                  <div className="flex justify-start">
-                    <div className="bg-[#F1F3F4] rounded-lg px-4 py-3">
-                      <Loader2 className="h-5 w-5 animate-spin text-[#1A73E8]" />
-                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-6 p-8">
+                    {/* Messages */}
+                    {messages.map((message, index) => (
+                      <div
+                        key={index}
+                        className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
+                      >
+                        {message.role === "assistant" ? (
+                          <Card className="max-w-[80%] shadow-lg border-l-4 border-l-[#4285F4]">
+                            <CardContent className="p-4">
+                              <div className="flex items-start gap-3">
+                                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#4285F4] flex-shrink-0">
+                                  <Sparkles className="h-4 w-4 text-white" />
+                                </div>
+                                <p className="text-sm text-[#1F2937] whitespace-pre-wrap leading-relaxed">
+                                  {message.content}
+                                </p>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ) : (
+                          <div className="max-w-[80%] bg-[#4285F4] text-white rounded-lg px-4 py-3 shadow-md">
+                            <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+
+                    {/* Loading State */}
+                    {queryLoading && (
+                      <div className="flex justify-start">
+                        <Card className="shadow-lg border-l-4 border-l-[#4285F4]">
+                          <CardContent className="p-4">
+                            <div className="flex items-center gap-3">
+                              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#4285F4]">
+                                <Loader2 className="h-4 w-4 animate-spin text-white" />
+                              </div>
+                              <span className="text-sm text-[#6B7280]">Analyzing document...</span>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      </div>
+                    )}
+                    <div ref={messagesEndRef} />
                   </div>
                 )}
-                <div ref={messagesEndRef} />
               </div>
+            </ScrollArea>
 
-              {/* Input Area */}
-              <div className="border-t border-[#E2E8F0] p-4">
-                <div className="flex gap-2">
-                  <Input
-                    value={query}
-                    onChange={(e) => setQuery(e.target.value)}
-                    onKeyPress={handleKeyPress}
-                    placeholder={
-                      hasDocuments
-                        ? "Ask a question about your documents..."
-                        : "Upload documents first..."
-                    }
-                    disabled={!hasDocuments || queryLoading}
-                    className="flex-1"
-                  />
-                  <Button
-                    onClick={handleSendQuery}
-                    disabled={!query.trim() || !hasDocuments || queryLoading}
-                    className="bg-[#1A73E8] hover:bg-[#1557B0]"
-                  >
-                    <Send className="h-4 w-4" />
-                  </Button>
-                </div>
+            {/* Fixed Input at Bottom */}
+            <div className="border-t border-[#E2E8F0] bg-white p-6">
+              <div className="flex gap-3">
+                <Input
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  onKeyPress={handleKeyPress}
+                  placeholder={
+                    hasDocuments
+                      ? "Ask a question about your documents..."
+                      : "Upload documents first..."
+                  }
+                  disabled={!hasDocuments || queryLoading}
+                  className="flex-1 h-12 border-[#E2E8F0] focus:border-[#4285F4] focus-visible:ring-[#4285F4]"
+                />
+                <Button
+                  onClick={handleSendQuery}
+                  disabled={!query.trim() || !hasDocuments || queryLoading}
+                  className="h-12 px-6 bg-[#4285F4] hover:bg-[#3367D6]"
+                >
+                  <Send className="h-4 w-4" />
+                </Button>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
+
+          {/* Sidebar - 30% */}
+          <div className="w-[30%] border-l border-[#E2E8F0] bg-gradient-to-br from-[#F8F9FA] to-[#F1F5F9]">
+            <ScrollArea className="h-full p-6">
+              <div className="space-y-6">
+                {/* New Chat Button */}
+                <Button
+                  onClick={handleNewChat}
+                  className="w-full h-12 bg-[#4285F4] hover:bg-[#3367D6] text-white shadow-md text-base"
+                >
+                  <MessageSquarePlus className="mr-2 h-5 w-5" />
+                  New Chat
+                </Button>
+
+                {/* Upload Section */}
+                <Card className="shadow-sm border-l-4 border-l-[#4285F4]">
+                  <CardContent className="p-6">
+                    <h3 className="text-base font-semibold text-[#1F2937] mb-5 flex items-center gap-2">
+                      <div className="w-2 h-2 bg-[#4285F4] rounded-full"></div>
+                      Upload Documents
+                    </h3>
+                    
+                    <div className="space-y-4">
+                      <Input
+                        type="file"
+                        accept=".pdf,.docx,.txt"
+                        onChange={handleFileSelect}
+                        ref={fileInputRef}
+                        className="cursor-pointer text-sm h-10"
+                        multiple
+                      />
+                      
+                      {selectedFiles.length > 0 && (
+                        <div className="space-y-3">
+                          {selectedFiles.map((file, index) => (
+                            <div
+                              key={index}
+                              className="flex items-start gap-2 bg-white rounded-md px-3 py-3 text-sm border border-[#E2E8F0]"
+                            >
+                              <FileText className="h-4 w-4 text-[#4285F4] flex-shrink-0 mt-0.5" />
+                              <span className="flex-1 break-all text-xs leading-relaxed">{file.name}</span>
+                              <button
+                                onClick={() => removeFile(index)}
+                                className="text-[#6B7280] hover:text-red-600 flex-shrink-0"
+                              >
+                                <X className="h-4 w-4" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      <Button
+                        onClick={handleUpload}
+                        disabled={selectedFiles.length === 0 || uploadStatus === "uploading"}
+                        className="w-full h-11 bg-[#34A853] hover:bg-[#2D8E47] text-white text-sm"
+                      >
+                        {uploadStatus === "uploading" ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Uploading...
+                          </>
+                        ) : (
+                          <>
+                            <Upload className="mr-2 h-4 w-4" />
+                            Upload {selectedFiles.length > 0 && `(${selectedFiles.length})`}
+                          </>
+                        )}
+                      </Button>
+
+                      {uploadProgress && (
+                        <div className="flex items-center gap-2 text-sm text-[#4285F4] py-2">
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          <span className="break-all text-xs">{uploadProgress}</span>
+                        </div>
+                      )}
+
+                      {uploadMessage && (
+                        <div
+                          className={`flex items-center gap-2 text-sm py-2 ${uploadStatus === "success" ? "text-[#34A853]" : "text-[#EA4335]"}`}
+                        >
+                          {uploadStatus === "success" ? (
+                            <CheckCircle2 className="h-4 w-4" />
+                          ) : (
+                            <AlertCircle className="h-4 w-4" />
+                          )}
+                          <span>{uploadMessage}</span>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Uploaded Documents List */}
+                {uploadedDocuments.length > 0 && (
+                  <Card className="shadow-sm border-l-4 border-l-[#FBBC04]">
+                    <CardContent className="p-6">
+                      <h3 className="text-base font-semibold text-[#1F2937] mb-5 flex items-center gap-2">
+                        <div className="w-2 h-2 bg-[#FBBC04] rounded-full"></div>
+                        Documents ({uploadedDocuments.length})
+                      </h3>
+                      <div className="space-y-3">
+                        {uploadedDocuments.map((doc, index) => (
+                          <div
+                            key={index}
+                            className="bg-white rounded-lg p-4 border border-[#E2E8F0] hover:shadow-sm transition-all"
+                          >
+                            <div className="flex items-start justify-between gap-3 mb-3">
+                              <div className="flex items-start gap-2 flex-1 min-w-0">
+                                <FileText className="h-5 w-5 text-[#4285F4] flex-shrink-0 mt-0.5" />
+                                <span className="text-sm font-medium text-[#1F2937] break-all leading-relaxed">
+                                  {doc.name}
+                                </span>
+                              </div>
+                              <button
+                                onClick={() => removeDocument(index)}
+                                className="text-[#6B7280] hover:text-[#EA4335] flex-shrink-0"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            </div>
+                            <div className="text-xs text-[#6B7280] pl-7">
+                              {doc.chunks} chunks • {doc.uploadedAt.toLocaleTimeString()}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+            </ScrollArea>
+          </div>
         </div>
       </div>
     </>

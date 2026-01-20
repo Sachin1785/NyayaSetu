@@ -94,3 +94,8 @@ async def ingest_api(id: str = Form(),file: UploadFile = File(...), filename: st
     except Exception as e:
         print(e)
         raise HTTPException(status_code=500, detail="Bad Request!")
+
+# Entry point for running with 'python server.py'
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run("server:app", host="0.0.0.0", port=8001, reload=True)
