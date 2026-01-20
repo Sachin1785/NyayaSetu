@@ -12,13 +12,15 @@ from deep_translator import GoogleTranslator
 # IMPORT YOUR NEW LIBRARY
 import indian_kanoon_lib as ik_api
 
+# Import hybrid retrieval engine
+from RAG_Builder.hybrid_retriveal import load_bm25_retriever, translate_query, perform_hybrid_search
+
 # --- CONFIGURATION ---
-DB_DIRECTORY = os.path.join(os.path.dirname(__file__), "RAG Builder", "legal_db")
+DB_DIRECTORY = os.path.join(os.path.dirname(__file__), "RAG_Builder", "legal_db")
 MODEL_NAME = "BAAI/bge-small-en-v1.5" 
 CONFIDENCE_THRESHOLD = 0.35
 MAX_DOC_LENGTH = 100000  # Keeping this safe to avoid constant timeouts
 
-# Initialize database connection
 print(f"⏳ Loading Legal Database...")
 embedding_function = HuggingFaceEmbeddings(
     model_name=MODEL_NAME,
@@ -28,41 +30,35 @@ embedding_function = HuggingFaceEmbeddings(
 
 if os.path.exists(DB_DIRECTORY):
     db = Chroma(persist_directory=DB_DIRECTORY, embedding_function=embedding_function)
-    print(f"✅ Connected to ChromaDB")
+    bm25_retriever = load_bm25_retriever()
+    print(f"✅ Connected to ChromaDB and BM25 Retriever")
 else:
     print(f"❌ Database not found. RAG functionality will be limited.")
     db = None
-
-def translate_query_internal(text: str) -> str:
-    try:
-        if not text.isascii():
-            return GoogleTranslator(source='auto', target='en').translate(text)
-        return text
-    except Exception:
-        return text
+    bm25_retriever = None
 
 # --- TOOLS DEFINITION ---
 
 @tool
 def search_legal_database(query: str) -> str:
     """
-    Search for STATUTES, DEFINITIONS, or PUNISHMENTS in IPC/BNS.
+    Search for STATUTES, DEFINITIONS, or PUNISHMENTS in IPC/BNS/IT Act using hybrid retrieval.
     Input: A specific legal topic (e.g., "punishment for snatching", "Section 302 text").
     """
-    if db is None: return "Error: Database not connected."
-    
-    clean_query = translate_query_internal(query)
-    results = db.similarity_search_with_relevance_scores(clean_query, k=3)
-    
-    if not results: 
+    if db is None or bm25_retriever is None:
+        return "Error: Database not connected."
+
+    clean_query = translate_query(query)
+    results = perform_hybrid_search(clean_query, db, bm25_retriever)
+
+    if not results:
         return "No specific statutes found in the database."
-    
+
     output = []
-    for doc, score in results:
-        if score > CONFIDENCE_THRESHOLD:
-            meta = doc.metadata
-            output.append(f"Act: {meta.get('source', 'Unknown')}\nSection: {meta.get('section_id', 'N/A')}\nText: {doc.page_content}")
-            
+    for doc in results:
+        meta = doc.metadata
+        output.append(f"Act: {meta.get('source', 'Unknown')}\nSection: {meta.get('section_id', 'N/A')}\nText: {doc.page_content}")
+
     return "\n---\n".join(output) if output else "No highly relevant sections found."
 
 @tool

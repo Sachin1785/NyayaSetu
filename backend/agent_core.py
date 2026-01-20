@@ -13,7 +13,7 @@ from deep_translator import GoogleTranslator
 import indian_kanoon_lib as ik_api
 
 # --- CONFIGURATION ---
-DB_DIRECTORY = os.path.join(os.path.dirname(__file__), "RAG Builder", "legal_db")
+DB_DIRECTORY = os.path.join(os.path.dirname(__file__), "RAG_Builder", "legal_db")
 MODEL_NAME = "BAAI/bge-small-en-v1.5" 
 CONFIDENCE_THRESHOLD = 0.35
 MAX_DOC_LENGTH = 10000  # Keeping this safe to avoid constant timeouts
