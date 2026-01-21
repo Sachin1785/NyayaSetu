@@ -93,8 +93,8 @@ export default function CaseLawPage() {
           {/* Header with gradient */}
           <div className="relative overflow-hidden rounded-xl bg-gradient-to-r from-[#4285F4] to-[#34A853] p-8 text-white">
             <div className="relative z-10">
-              <h1 className="text-4xl font-bold mb-3">Case Law Database</h1>
-              <p className="text-blue-100 text-lg">Browse and search recent court judgments from Indian Kanoon</p>
+              <h1 className="text-4xl font-bold mb-3">Case Law Search</h1>
+              {/* <p className="text-blue-100 text-lg">Browse and search recent court judgments from Indian Kanoon</p> */}
             </div>
             <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-8 translate-x-8"></div>
             <div className="absolute bottom-0 left-0 w-24 h-24 bg-[#FBBC04]/20 rounded-full translate-y-8 -translate-x-8"></div>

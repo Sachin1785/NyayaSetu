@@ -9,8 +9,8 @@ import { useState, useEffect } from "react";
 const navigationItems = [
   { name: "Home", href: "/", icon: Home },
   { name: "Research", href: "/research", icon: Scale },
-  { name: "Comparator", href: "/comparator", icon: GitCompare },
   { name: "Documents", href: "/documents", icon: FileText },
+  { name: "Comparator", href: "/comparator", icon: GitCompare },
   { name: "Case Law", href: "/case-law", icon: Gavel },
   { name: "Settings", href: "/settings", icon: Settings },
 ];
