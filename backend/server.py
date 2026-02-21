@@ -215,5 +215,9 @@ async def get_case_document(doc_id: int):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to retrieve document: {str(e)}")
 
+        @app.get("/extra")
+        async def extra_endpoint():
+            return {"message": "This is an extra endpoint."}
+
 if __name__ == "__main__":
     uvicorn.run(app, host="localhost", port=8000)
